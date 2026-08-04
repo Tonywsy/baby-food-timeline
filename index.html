@@ -128,14 +128,13 @@
 
 <div class="toolbar">
   <button class="btn" id="saveAll">📸 保存整页长图</button>
-  <button class="btn ghost" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ 回到顶部</button>
 </div>
 
 <div class="timeline" id="timeline"></div>
 
 <footer>
   数据来源：中国营养学会《中国居民膳食指南（2022）》 · WHO 婴幼儿喂养建议 · 通用儿科辅食共识。<br>
-  制作：母婴数据实验室 · 第 1 弹（辅食篇）
+  制作：小葵相机
 </footer>
 
 <div class="toast" id="toast"></div>
@@ -271,7 +270,7 @@ function render(){
         ${tc}
         <div class="note">💡 ${note}</div>
         <div class="card-foot">
-          <span>母婴数据实验室 · 辅食篇 #${i+1}</span>
+          <span>小葵相机 · 辅食篇 #${i+1}</span>
           <button class="save" onclick="saveCard(${i})">保存本卡为图</button>
         </div>
       </div>`;
