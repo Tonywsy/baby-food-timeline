@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>宝宝辅食添加时间表（0–24 月龄）· 可截图系列</title>
+<meta name="description" content="按月龄的辅食添加可视化时间表：可以吃什么、禁忌什么，支持按宝宝类型（普通/过敏高风险/早产/已确诊过敏）筛选，可截图收藏。">
+<meta property="og:title" content="宝宝辅食添加时间表（0–24 月龄）">
+<meta property="og:description" content="按月龄吃对、吃安全 · 母婴数据实验室第 1 弹">
+<meta property="og:type" content="website">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --bg:#FBF7F2; --card:#FFFFFF; --ink:#2C2C2A; --muted:#7A756E;
+    --line:#E7DECF; --green:#0F6E56; --greenbg:#E1F5EE;
+    --red:#993C1D; --redbg:#FAECE7; --blue:#185FA5; --bluebg:#E6F1FB;
+    --amber:#854F0B; --amberbg:#FAEEDA; --shadow:0 6px 20px rgba(60,50,40,.08);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.6;}
+  #progress{position:fixed;top:0;left:0;height:4px;width:0;
+    background:linear-gradient(90deg,#0F6E56,#185FA5);z-index:50;transition:width .1s;}
+  header{max-width:760px;margin:0 auto;padding:54px 20px 10px;text-align:center;}
+  header h1{font-size:26px;margin:0 0 8px;font-weight:700;letter-spacing:.5px;}
+  header p{color:var(--muted);margin:0;font-size:14px;}
+  .disclaimer{max-width:760px;margin:14px auto 0;padding:10px 16px;
+    background:var(--amberbg);border:1px solid #EFC775;border-radius:10px;
+    font-size:12.5px;color:#633806;}
+
+  /* 交互筛选 */
+  .filters{max-width:760px;margin:18px auto 0;padding:0 16px;
+    display:flex;align-items:center;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .flabel{font-size:13px;color:var(--muted);font-weight:500;}
+  .seg{display:inline-flex;background:#fff;border:1px solid var(--line);
+    border-radius:999px;padding:3px;flex-wrap:wrap;}
+  .seg button{border:none;background:transparent;padding:7px 13px;font-size:13px;
+    border-radius:999px;cursor:pointer;color:var(--muted);font-weight:500;}
+  .seg button.active{background:var(--ink);color:#fff;}
+  .banner{display:none;max-width:760px;margin:12px auto 0;padding:11px 16px;
+    border-radius:12px;font-size:13px;line-height:1.55;}
+  .banner.show{display:block;}
+  .banner.allergy{background:var(--amberbg);border:1px solid #EFC775;color:#633806;}
+  .banner.preemie{background:var(--bluebg);border:1px solid #B5D4F4;color:#0C447C;}
+  .banner.diagnosed{background:var(--redbg);border:1px solid #F09595;color:#791F1F;}
+
+  .toolbar{max-width:760px;margin:16px auto;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .btn{border:none;border-radius:999px;padding:9px 16px;font-size:13px;cursor:pointer;
+    background:var(--ink);color:#fff;font-weight:500;}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);}
+  .btn:active{transform:translateY(1px);}
+
+  .timeline{max-width:760px;margin:6px auto 60px;padding:0 16px;position:relative;}
+  .timeline:before{content:"";position:absolute;left:30px;top:8px;bottom:8px;width:3px;
+    background:var(--line);border-radius:3px;}
+  .stage{position:relative;padding:10px 0 26px 64px;opacity:0;transform:translateY(24px);
+    transition:opacity .6s ease,transform .6s ease;}
+  .stage.in{opacity:1;transform:none;}
+  .dot{position:absolute;left:18px;top:18px;width:26px;height:26px;border-radius:50%;
+    background:#fff;border:3px solid var(--blue);display:flex;align-items:center;
+    justify-content:center;font-size:12px;font-weight:700;color:var(--blue);z-index:2;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:16px 18px;box-shadow:var(--shadow);}
+  .card-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+    border-bottom:1px dashed var(--line);padding-bottom:10px;margin-bottom:12px;}
+  .card-head .m{font-size:19px;font-weight:700;}
+  .tag{font-size:12px;background:var(--bluebg);color:var(--blue);padding:2px 10px;border-radius:999px;font-weight:500;}
+  .meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+  .chip{font-size:12px;background:var(--bg);border:1px solid var(--line);
+    padding:4px 10px;border-radius:8px;color:var(--muted);}
+  .chip b{color:var(--ink);font-weight:600;}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:560px){.cols{grid-template-columns:1fr;}}
+  .block{border-radius:12px;padding:10px 12px;}
+  .block.ok{background:var(--greenbg);}
+  .block.no{background:var(--redbg);}
+  .block h4{margin:0 0 6px;font-size:13px;display:flex;align-items:center;gap:6px;}
+  .block.ok h4{color:var(--green);}
+  .block.no h4{color:var(--red);}
+  .block ul{margin:0;padding-left:18px;font-size:13px;}
+  .block li{margin:3px 0;}
+  .new{background:var(--amberbg);border-radius:10px;padding:9px 12px;margin-top:12px;font-size:13px;color:#633806;}
+  .new b{color:var(--amber);}
+  .tcallout{margin-top:10px;border-radius:10px;padding:8px 12px;font-size:12.5px;line-height:1.5;}
+  .tcallout.allergy{background:var(--amberbg);color:#633806;}
+  .tcallout.preemie{background:var(--bluebg);color:#0C447C;}
+  .note{font-size:12px;color:var(--muted);margin-top:8px;}
+  .card-foot{margin-top:12px;padding-top:8px;border-top:1px dashed var(--line);
+    font-size:11px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;}
+  .card-foot .save{border:1px solid var(--line);background:#fff;border-radius:8px;
+    padding:4px 10px;font-size:11px;cursor:pointer;color:var(--ink);}
+  .albadge{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:6px;
+    margin-left:6px;vertical-align:middle;font-weight:600;white-space:nowrap;}
+  .albadge.warn{background:#fff;color:var(--amber);border:1px solid #EFC775;}
+  .albadge.danger{background:#fff;color:var(--red);border:1px solid #F09595;}
+  .strike{text-decoration:line-through;color:var(--muted);}
+  footer{max-width:760px;margin:0 auto 50px;padding:0 20px;font-size:12px;color:var(--muted);text-align:center;}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;
+    opacity:0;pointer-events:none;transition:opacity .3s;z-index:99;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<header>
+  <h1>宝宝辅食添加时间表</h1>
+  <p>0–24 月龄 · 按月龄吃对、吃安全 · 可截图收藏系列</p>
+</header>
+
+<div class="disclaimer">
+  ⚠️ 本表依据《中国居民膳食指南（2022）》、WHO 及常见儿科共识整理，<b>仅供参考</b>。
+  早产儿、过敏史、特殊体质请遵医嘱；每次引入新食物观察 2–3 天（排敏）。
+</div>
+
+<div class="filters">
+  <span class="flabel">宝宝类型：</span>
+  <div class="seg" id="seg">
+    <button data-t="normal" class="active">普通</button>
+    <button data-t="allergy">过敏高风险</button>
+    <button data-t="preemie">早产</button>
+    <button data-t="diagnosed">已确诊过敏</button>
+  </div>
+</div>
+
+<div class="banner" id="banner"></div>
+
+<div class="toolbar">
+  <button class="btn" id="saveAll">📸 保存整页长图</button>
+  <button class="btn ghost" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ 回到顶部</button>
+</div>
+
+<div class="timeline" id="timeline"></div>
+
+<footer>
+  数据来源：中国营养学会《中国居民膳食指南（2022）》 · WHO 婴幼儿喂养建议 · 通用儿科辅食共识。<br>
+  制作：母婴数据实验室 · 第 1 弹（辅食篇）
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const stages = [
+  { m:"0–5 月龄", tag:"纯乳期", texture:"液态 · 母乳 / 配方奶", meals:"按需喂养",
+    foods:["母乳或配方奶（唯一营养来源）"],
+    forbid:["米粉米糊等任何固体","盐、糖、蜂蜜","鲜奶","果汁"],
+    note:"满 6 月龄前肠道与肾脏未成熟，过早加辅食增加过敏与肾脏负担。",
+    neww:"暂不加任何辅食" },
+
+  { m:"满 6 月龄", tag:"第一口辅食", texture:"泥糊状（顺滑）", meals:"每天 1 顿",
+    foods:["铁强化米粉（最常用第一口）","肉泥 / 肝泥（富铁）","蔬菜泥：南瓜、胡萝卜、土豆、西兰花","水果泥：苹果、香蕉"],
+    forbid:["盐、糖、蜂蜜（肉毒杆菌风险）","鲜奶作主食","整粒坚果 / 果冻","果汁代替果泥"],
+    note:"观察 2–3 天无皮疹、腹泻、呕吐，再引入下一种（排敏）。",
+    neww:"从富铁泥糊状食物开始，每次只加一种新食物" },
+
+  { m:"7 月龄", tag:"末状食物", texture:"细末状 / 稍粗泥", meals:"每天 1–2 顿",
+    foods:["蛋黄 / 蛋类（少量起，观察）","鱼泥、肉禽鱼泥","嫩豆腐","更多蔬菜、水果"],
+    forbid:["仍不加盐糖","蜂蜜","整粒葡萄、坚果","高汞鱼（鲨鱼、旗鱼）"],
+    note:"手指食物（蒸软胡萝卜条）锻炼抓握与咀嚼。",
+    neww:"引入蛋黄与优质蛋白；可给软烂手指食物" },
+
+  { m:"8 月龄", tag:"碎末状", texture:"碎末 / 小颗粒", meals:"每天 2 顿",
+    foods:["肉末、鱼末","烂粥、烂面","碎菜、软水果丁","豆腐、蛋黄"],
+    forbid:["盐糖蜂蜜依旧禁","整粒坚果、果冻","带刺鱼未去净"],
+    note:"可让宝宝参与「抓食」，接受度更高。",
+    neww:"食物质地进一步增粗，练咀嚼" },
+
+  { m:"9 月龄", tag:"小颗粒", texture:"小颗粒 / 软碎块", meals:"每天 2 顿 + 加餐",
+    foods:["软饭、碎面","肉禽鱼碎末","各类蔬菜碎","水果软块"],
+    forbid:["盐糖依然不加","整粒坚果、爆米花","果冻"],
+    note:"鼓励自主进食（BLW），接受食物多样性。",
+    neww:"尝试接近家庭口味（清淡）" },
+
+  { m:"10 月龄", tag:"碎块", texture:"碎块 / 小块", meals:"每天 3 顿 + 加餐",
+    foods:["软饭、小饺子、小馄饨","肉鱼蛋蔬菜全品类","手指食物为主"],
+    forbid:["整粒坚果、果冻、爆米花","蜂蜜仍禁（满 1 岁前）","过咸家庭菜"],
+    note:"进餐定时，减少奶睡依赖。",
+    neww:"三餐规律，向家庭饮食过渡" },
+
+  { m:"11 月龄", tag:"小块", texture:"小块 / 易咀嚼", meals:"每天 3 顿 + 加餐",
+    foods:["接近成人清淡膳食","全蛋（如耐受）","各类主食、蛋白质、蔬果"],
+    forbid:["蜂蜜（满 1 岁前禁）","整粒坚果、果冻","过硬、过黏食物"],
+    note:"培养用餐椅、固定餐具习惯。",
+    neww:"自主进食能力巩固" },
+
+  { m:"12 月龄（1 岁）", tag:"家庭饮食", texture:"清淡家庭食物", meals:"三餐两点",
+    foods:["全蛋、禽肉鱼蛋","米饭面点","牛奶可少量引入","丰富蔬果"],
+    forbid:["仍尽量少盐少糖","整粒坚果、果冻（窒息风险）","腌制、辛辣"],
+    note:"奶逐步转为「辅食之外」的饮品，主食成核心。",
+    neww:"满 1 岁可引入鲜奶；蜂蜜满 1 岁后可吃" },
+
+  { m:"1–2 岁", tag:"过渡期", texture:"接近成人 · 清淡软烂", meals:"三餐两点",
+    foods:["家庭清淡饮食","全蛋、奶、豆制品","切碎坚果（非整粒）","多彩蔬果"],
+    forbid:["整粒坚果、果冻、整颗葡萄（窒息）","高盐高糖加工食品","含咖啡因饮料"],
+    note:"整粒坚果、葡萄等务必切碎，防窒息。",
+    neww:"逐步与家人同桌吃饭" }
+];
+
+const ALLERGEN=['蛋','鱼','虾','蟹','贝','花生','坚果','大豆','豆腐','小麦','面','芝麻','奶'];
+
+const BANNERS={
+  allergy:"🍼 <b>过敏高风险</b>（家族史 / 严重湿疹）：易过敏食物（蛋、鱼、花生、坚果等）不必刻意推迟，但建议满 6 月龄后<b>单一、少量、逐一</b>引入，每种观察 3–5 天；高风险婴儿引入花生前建议先咨询医生。",
+  preemie:"⏱ <b>早产宝宝</b>：请按「矫正月龄」（从预产期算起）判断添加时间，通常<b>矫正满 6 月龄</b>再添加辅食；以儿保医生评估为准。",
+  diagnosed:"🚫 <b>已确诊食物过敏</b>：下方各阶段中带「⚠ 需回避」的食物为需严格回避的过敏原（以医嘱为准），复查通过后再评估是否重新引入。"
+};
+
+const state={type:'normal'};
+const tl=document.getElementById('timeline');
+const banner=document.getElementById('banner');
+const io=new IntersectionObserver((es)=>{
+  es.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('in'); });
+},{threshold:.15});
+
+function badge(txt){
+  if(state.type==='normal') return '';
+  const hit=ALLERGEN.some(k=>txt.includes(k));
+  if(!hit) return '';
+  if(state.type==='diagnosed') return '<span class="albadge danger">⚠ 需回避</span>';
+  return '<span class="albadge warn">⚠ 易过敏</span>';
+}
+function isAllergen(txt){ return ALLERGEN.some(k=>txt.includes(k)); }
+
+function render(){
+  const t=state.type;
+  // banner
+  if(BANNERS[t]){ banner.className='banner show '+t; banner.innerHTML=BANNERS[t]; }
+  else { banner.className='banner'; banner.innerHTML=''; }
+
+  tl.innerHTML='';
+  stages.forEach((s,i)=>{
+    const foodItems=s.foods.map(f=>{
+      const cls=(t==='diagnosed'&&isAllergen(f))?' class="strike"':'';
+      return `<li${cls}>${f}${badge(f)}</li>`;
+    }).join('');
+    const forbidItems=s.forbid.map(f=>`<li>${f}${badge(f)}</li>`).join('');
+
+    let tc='';
+    if(t==='allergy'){
+      if(i===1) tc='<div class="tcallout allergy">满 6 月龄起即可开始引入易过敏食物，从极少量起，连续观察 3–5 天无反应再增量；湿疹严重者先问医生。</div>';
+      else if(i===2) tc='<div class="tcallout allergy">引入蛋黄 / 鱼类时用指尖大小试，观察几天再慢慢加量。</div>';
+    }
+
+    let note=s.note;
+    if(t==='preemie') note+='（早产宝宝请按矫正月龄）';
+
+    const el=document.createElement('div');
+    el.className='stage';
+    el.innerHTML=`
+      <div class="dot">${i+1}</div>
+      <div class="card" id="card-${i}">
+        <div class="card-head">
+          <span class="m">${s.m}</span>
+          <span class="tag">${s.tag}</span>
+        </div>
+        <div class="meta">
+          <span class="chip">性状：<b>${s.texture}</b></span>
+          <span class="chip">餐次：<b>${s.meals}</b></span>
+        </div>
+        <div class="cols">
+          <div class="block ok">
+            <h4>✅ 可以吃</h4>
+            <ul>${foodItems}</ul>
+          </div>
+          <div class="block no">
+            <h4>⛔ 禁忌 / 注意</h4>
+            <ul>${forbidItems}</ul>
+          </div>
+        </div>
+        <div class="new">★ 本月重点：<b>${s.neww}</b></div>
+        ${tc}
+        <div class="note">💡 ${note}</div>
+        <div class="card-foot">
+          <span>母婴数据实验室 · 辅食篇 #${i+1}</span>
+          <button class="save" onclick="saveCard(${i})">保存本卡为图</button>
+        </div>
+      </div>`;
+    tl.appendChild(el);
+  });
+  document.querySelectorAll('.stage').forEach(s=>io.observe(s));
+}
+
+// 筛选交互
+document.getElementById('seg').addEventListener('click',(e)=>{
+  const b=e.target.closest('button'); if(!b) return;
+  state.type=b.dataset.t;
+  document.querySelectorAll('#seg button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  render();
+});
+
+// 顶部进度条
+window.addEventListener('scroll',()=>{
+  const h=document.documentElement;
+  const p=h.scrollTop/(h.scrollHeight-h.clientHeight)*100;
+  document.getElementById('progress').style.width=p+'%';
+});
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1800);
+}
+function saveCard(i){
+  toast('正在生成图片…');
+  html2canvas(document.getElementById('card-'+i),{backgroundColor:'#FFFFFF',scale:2})
+    .then(c=>download(c,'辅食时间表_'+stages[i].m+'_'+state.type));
+}
+function download(canvas,name){
+  const a=document.createElement('a');
+  a.href=canvas.toDataURL('image/png');
+  a.download=name+'.png'; a.click();
+  toast('已保存到下载文件夹 ✓');
+}
+document.getElementById('saveAll').onclick=()=>{
+  toast('正在生成长图，请稍候…');
+  html2canvas(document.body,{backgroundColor:'#FBF7F2',scale:2})
+    .then(c=>download(c,'宝宝辅食添加时间表_'+state.type));
+};
+
+render();
+</script>
+</body>
+</html>
